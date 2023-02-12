@@ -1,68 +1,100 @@
-use std::ops::{Add, Mul};
-use std::collections::HashMap;
 use std::cell::RefCell;
+use std::collections::HashMap;
+use std::ops::{Add, Mul};
 
+#[derive(Clone)]
 pub struct LAC<T> {
     basic_layer: BasicLayer<T>,
     layers: Vec<Layer<T>>,
-    output_id: Option<u64>,
+    set_output_gate_id: Option<u64>,
 }
 
-impl<T: Add<Output = T> + Mul<Output = T> + Copy> LAC<T> {
-
+impl<T: Add<Output = T> + Mul<Output = T> + Copy + std::iter::Sum + std::fmt::Debug> LAC<T> {
     pub fn new() -> Self {
-        LAC {basic_layer: BasicLayer::new(), layers: Vec::new(), output_id: None}
+        LAC {
+            basic_layer: BasicLayer::new(),
+            layers: Vec::new(),
+            set_output_gate_id: None,
+        }
     }
 
     pub fn set_basic_layer(&mut self, basic_layer: BasicLayer<T>) {
         self.basic_layer = basic_layer;
     }
 
+    pub fn get_basic_layer(&mut self) -> &BasicLayer<T> {
+        &self.basic_layer
+    }
+
+    pub fn get_layer_by_degree(&mut self, degree: u64) -> &Layer<T> {
+        let pos = (degree - 1) as usize;
+        &self.layers[pos]
+    }
+
     pub fn append_layer(&mut self, layer: Layer<T>) {
         self.layers.push(layer);
     }
 
-    pub fn set_output_id(&mut self, output_id: u64) {
-        self.output_id = Some(output_id);
+    pub fn append_layers(&mut self, layers: Vec<Layer<T>>) {
+        for layer in layers {
+            self.layers.push(layer);
+        }
+    }
+
+    pub fn set_output_gate_id(&mut self, set_output_gate_id: u64) {
+        self.set_output_gate_id = Some(set_output_gate_id);
     }
 
     pub fn evaluate(&mut self) -> T {
-        for layer in self.layers.iter_mut() {
-            layer.evaluate();
+        for i in 0..self.layers.len() {
+            self.layers[i] = self.clone().layers[i].evaluate(self.clone());
         }
-        self.layers.last().unwrap().gates[&self.output_id.unwrap()].borrow().output.unwrap()
+        self.layers.last().unwrap().gates[&self.set_output_gate_id.unwrap()]
+            .borrow()
+            .output
+            .unwrap()
     }
-
 }
 
+#[derive(Clone)]
 pub struct Layer<T> {
     degree: Option<u64>,
     gates: HashMap<u64, RefCell<Gate<T>>>, //id -> gate
     output: HashMap<u64, T>,
 }
 
-impl<T: Add<Output = T> + Mul<Output = T> + Copy> Layer<T> {
-
+impl<T: Add<Output = T> + Mul<Output = T> + Copy + std::iter::Sum + std::fmt::Debug> Layer<T> {
     pub fn new() -> Self {
-        Layer{ degree: None, gates: HashMap::new(), output: HashMap::new()}
+        Layer {
+            degree: None,
+            gates: HashMap::new(),
+            output: HashMap::new(),
+        }
     }
 
     pub fn append_gate(&mut self, gate: Gate<T>) {
         self.gates.insert(gate.id.unwrap(), RefCell::new(gate));
     }
 
+    pub fn append_gates(&mut self, gates: Vec<Gate<T>>) {
+        for gate in gates {
+            self.gates.insert(gate.id.unwrap(), RefCell::new(gate));
+        }
+    }
+
     pub fn set_degree(&mut self, degree: u64) {
         self.degree = Some(degree);
     }
 
-    fn evaluate(&mut self) {
-        for(id, gate) in self.gates.iter() {
+    fn evaluate(&mut self, lac: LAC<T>) -> Layer<T> {
+        for (id, gate) in self.gates.iter() {
             let mut g = gate.borrow_mut();
+            g.set_input(lac.clone());
             g.evaluate();
             self.output.insert(*id, g.output.unwrap());
         }
+        self.clone()
     }
-
 }
 
 #[derive(Clone)]
@@ -72,24 +104,34 @@ pub struct BasicLayer<T> {
 
 impl<T> BasicLayer<T> {
     pub fn new() -> Self {
-        BasicLayer{values: HashMap::new()}
+        BasicLayer {
+            values: HashMap::new(),
+        }
     }
 
     pub fn append_value(&mut self, value: Value<T>) {
         self.values.insert(value.id.unwrap(), value);
     }
+
+    pub fn append_values(&mut self, values: Vec<Value<T>>) {
+        for value in values {
+            self.values.insert(value.id.unwrap(), value);
+        }
+    }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Value<T> {
     id: Option<u64>,
     value: Option<T>,
 }
 
 impl<T> Value<T> {
-
     pub fn new() -> Self {
-        Value{id: None, value: None}
+        Value {
+            id: None,
+            value: None,
+        }
     }
 
     pub fn set_id(&mut self, id: u64) {
@@ -100,62 +142,95 @@ impl<T> Value<T> {
         self.value = Some(value);
     }
 
+    pub fn set_all(&mut self, id: u64, value: T) {
+        self.id = Some(id);
+        self.value = Some(value);
+    }
 }
 
+#[allow(non_snake_case)]
+#[derive(Clone, Debug, PartialEq)]
 enum GateType {
     Add,
-    Mult
+    Mult,
+    R1CS,
 }
 
+#[allow(non_snake_case)]
+#[derive(Clone)]
 pub struct Gate<T> {
     degree: Option<u64>,
-    parent_layer: Option<Layer<T>>,
-    basic_layer: Option<BasicLayer<T>>,
     gate_type: GateType,
     id: Option<u64>,
-    input_id: Option<[u64; 2]>, //input id
+    input_id: Option<[u64; 2]>,           //input id
+    input_id_R1CS: Option<[Vec<u64>; 2]>, //input ids
     input: Option<[T; 2]>,
+    input_R1CS: Option<[Vec<T>; 2]>,
+    R1CS_weights: Option<[Vec<T>; 2]>,
     output: Option<T>, //output value
 }
 
-impl<T: Add<Output = T> + Mul<Output = T> + Copy> Gate<T> {
-
+impl<T: Add<Output = T> + Mul<Output = T> + Copy + std::iter::Sum + std::fmt::Debug> Gate<T> {
     pub fn new_add_gate() -> Self {
-        Gate{
+        Gate {
             degree: None,
-            parent_layer: None,
-            basic_layer: None,
             gate_type: GateType::Add,
             id: None,
             input_id: None,
+            input_id_R1CS: None,
             input: None,
+            input_R1CS: None,
+            R1CS_weights: None,
             output: None,
         }
     }
 
     pub fn new_mult_gate() -> Self {
-        Gate{
+        Gate {
             degree: None,
-            parent_layer: None,
-            basic_layer: None,
             gate_type: GateType::Mult,
             id: None,
             input_id: None,
+            input_id_R1CS: None,
             input: None,
+            input_R1CS: None,
+            R1CS_weights: None,
+            output: None,
+        }
+    }
+    #[allow(non_snake_case)]
+    pub fn new_R1CS_gate() -> Self {
+        Gate {
+            degree: None,
+            gate_type: GateType::R1CS,
+            id: None,
+            input_id: None,
+            input_id_R1CS: None,
+            input: None,
+            input_R1CS: None,
+            R1CS_weights: None,
             output: None,
         }
     }
 
+    #[allow(non_snake_case)]
+    pub fn set_all(
+        &mut self,
+        degree: Option<u64>,
+        id: Option<u64>,
+        input_id: Option<[u64; 2]>,
+        input_id_R1CS: Option<[Vec<u64>; 2]>,
+        R1CS_weights: Option<[Vec<T>; 2]>,
+    ) {
+        self.degree = degree;
+        self.id = id;
+        self.input_id = input_id;
+        self.input_id_R1CS = input_id_R1CS;
+        self.R1CS_weights = R1CS_weights;
+    }
+
     pub fn set_degree(&mut self, degree: u64) {
         self.degree = Some(degree);
-    }
-
-    pub fn set_parent_layer(&mut self, parent_layer: Layer<T>) {
-        self.parent_layer = Some(parent_layer);
-    }
-
-    pub fn set_basic_layer(&mut self, basic_layer: BasicLayer<T>) {
-        self.basic_layer = Some(basic_layer);
     }
 
     pub fn set_id(&mut self, id: u64) {
@@ -166,14 +241,80 @@ impl<T: Add<Output = T> + Mul<Output = T> + Copy> Gate<T> {
         self.input_id = Some(input_id);
     }
 
-    pub fn set_input(&mut self) {
-        if self.degree == Some(1) {
-            self.input = Some([self.basic_layer.as_ref().unwrap().values[&self.input_id.unwrap()[0]].value.unwrap(),
-                        self.basic_layer.as_ref().unwrap().values[&self.input_id.unwrap()[1]].value.unwrap()]);
-        }
-        else {
-            self.input.unwrap()[0] = self.parent_layer.as_ref().unwrap().gates[&self.input_id.unwrap()[0]].borrow().output.unwrap();
-            self.input.unwrap()[1] = self.parent_layer.as_ref().unwrap().gates[&self.input_id.unwrap()[1]].borrow().output.unwrap();
+    #[allow(non_snake_case)]
+    pub fn set_input_id_R1CS(&mut self, input_id_R1CS: [Vec<u64>; 2]) {
+        self.input_id_R1CS = Some(input_id_R1CS);
+    }
+
+    #[allow(non_snake_case)]
+    pub fn set_R1CS_weights(&mut self, R1CS_weights: [Vec<T>; 2]) {
+        self.R1CS_weights = Some(R1CS_weights);
+    }
+
+    pub fn set_input(&mut self, lac: LAC<T>) {
+        match self.gate_type {
+            GateType::Add | GateType::Mult => {
+                if self.degree == Some(1) {
+                    self.input = Some([
+                        lac.clone().get_basic_layer().values[&self.input_id.unwrap()[0]]
+                            .value
+                            .unwrap(),
+                        lac.clone().get_basic_layer().values[&self.input_id.unwrap()[1]]
+                            .value
+                            .unwrap(),
+                    ]);
+                } else {
+                    self.input = Some([
+                        lac.clone()
+                            .get_layer_by_degree(self.degree.unwrap() - 1)
+                            .gates[&self.input_id.unwrap()[0]]
+                            .borrow()
+                            .output
+                            .unwrap(),
+                        lac.clone()
+                            .get_layer_by_degree(self.degree.unwrap() - 1)
+                            .gates[&self.input_id.unwrap()[1]]
+                            .borrow()
+                            .output
+                            .unwrap(),
+                    ]);
+                }
+            }
+            GateType::R1CS => {
+                let mut input_array: [Vec<T>; 2] = [Vec::new(), Vec::new()];
+                if self.degree == Some(1) {
+                    for id in &self.input_id_R1CS.as_ref().unwrap()[0] {
+                        input_array[0]
+                            .push(lac.clone().get_basic_layer().values[id].value.unwrap());
+                    }
+                    for id in &self.input_id_R1CS.as_ref().unwrap()[1] {
+                        input_array[1]
+                            .push(lac.clone().get_basic_layer().values[id].value.unwrap());
+                    }
+                } else {
+                    for id in &self.input_id_R1CS.as_ref().unwrap()[0] {
+                        input_array[0].push(
+                            lac.clone()
+                                .get_layer_by_degree(self.degree.unwrap() - 1)
+                                .gates[id]
+                                .borrow()
+                                .output
+                                .unwrap(),
+                        );
+                    }
+                    for id in &self.input_id_R1CS.as_ref().unwrap()[1] {
+                        input_array[1].push(
+                            lac.clone()
+                                .get_layer_by_degree(self.degree.unwrap() - 1)
+                                .gates[id]
+                                .borrow()
+                                .output
+                                .unwrap(),
+                        );
+                    }
+                }
+                self.input_R1CS = Some(input_array);
+            }
         }
     }
 
@@ -183,10 +324,23 @@ impl<T: Add<Output = T> + Mul<Output = T> + Copy> Gate<T> {
     }
 
     pub fn evaluate(&mut self) {
-        self.output = match self.gate_type {
-            GateType::Add=> Some(self.input.unwrap()[0] + self.input.unwrap()[1]),
-            GateType::Mult => Some(self.input.unwrap()[0]*self.input.unwrap()[1]),
-        };
+        self.output = Some(match self.gate_type {
+            GateType::Add => self.input.unwrap()[0] + self.input.unwrap()[1],
+            GateType::Mult => self.input.unwrap()[0] * self.input.unwrap()[1],
+            GateType::R1CS => {
+                let val0: T = self.R1CS_weights.as_ref().unwrap()[0]
+                    .iter()
+                    .zip(&self.input_R1CS.as_ref().unwrap()[0])
+                    .map(|(x, y)| *x * *y)
+                    .sum();
+                let val1: T = self.R1CS_weights.as_ref().unwrap()[1]
+                    .iter()
+                    .zip(&self.input_R1CS.as_ref().unwrap()[1])
+                    .map(|(x, y)| *x * *y)
+                    .sum();
+                println!("{:?} {:?}", val0, val1);
+                val0 * val1
+            }
+        });
     }
-
 }
