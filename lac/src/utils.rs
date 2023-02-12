@@ -338,7 +338,6 @@ impl<T: Add<Output = T> + Mul<Output = T> + Copy + std::iter::Sum + std::fmt::De
                     .zip(&self.input_R1CS.as_ref().unwrap()[1])
                     .map(|(x, y)| *x * *y)
                     .sum();
-                println!("{:?} {:?}", val0, val1);
                 val0 * val1
             }
         });

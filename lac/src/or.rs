@@ -1,10 +1,11 @@
 use crate::utils::*;
 
-//OR gate implemented using 1-(1-x0)*(1-x1) using the following layered arithmetic circuit
-//  layer1: g_0=0           g_1=1           g_2=x0          g_3=x1
-//  layer2: g_4=g_0+g_0     g_5=g_0+g_1     g_6=(1-g_2)*1   g_7=(1-g_3)*1
-//  layer3:         g_8=g_4+g_5         g_9=g_6*g_7
-//  layer4:                 g_10=(g_8-g_9)*1
+//OR gate implemented using OR(x0,x1) = 1-(1-x0)*(1-x1)
+//Using the following layered arithmetic circuit:
+//  layer0: g_0=0           g_1=1           g_2=x0          g_3=x1
+//  layer1: g_4=g_0+g_0     g_5=g_0+g_1     g_6=(1-g_2)*1   g_7=(1-g_3)*1
+//  layer2:         g_8=g_4+g_5         g_9=g_6*g_7
+//  layer3:                 g_10=(g_8-g_9)*(g_8)
 
 pub fn get_or_lac_circuit(x0: i64, x1: i64) -> LAC<i64> {
     let mut lac = LAC::new();
@@ -54,12 +55,12 @@ fn get_or_first_layer() -> Layer<i64> {
     gate5.set_all(Some(1), Some(5), Some([0, 1]), None, None);
 
     let input_id_R1CS = Some([vec![1, 2], vec![1]]);
-    let input_R1CS = Some([vec![1, -1], vec![1]]);
-    gate6.set_all(Some(1), Some(6), None, input_id_R1CS, input_R1CS);
+    let weights_R1CS = Some([vec![1, -1], vec![1]]);
+    gate6.set_all(Some(1), Some(6), None, input_id_R1CS, weights_R1CS);
 
     let input_id_R1CS = Some([vec![1, 3], vec![1]]);
-    let input_R1CS = Some([vec![1, -1], vec![1]]);
-    gate7.set_all(Some(1), Some(7), None, input_id_R1CS, input_R1CS);
+    let weights_R1CS = Some([vec![1, -1], vec![1]]);
+    gate7.set_all(Some(1), Some(7), None, input_id_R1CS, weights_R1CS);
 
     layer.append_gates(vec![gate4, gate5, gate6, gate7]);
     layer.set_degree(1);
@@ -89,8 +90,8 @@ fn get_or_third_layer() -> Layer<i64> {
     let mut gate10: Gate<i64> = Gate::new_R1CS_gate();
 
     let input_id_R1CS = Some([vec![8, 9], vec![8]]);
-    let input_R1CS = Some([vec![1, -1], vec![1]]);
-    gate10.set_all(Some(3), Some(10), None, input_id_R1CS, input_R1CS);
+    let weights_R1CS = Some([vec![1, -1], vec![1]]);
+    gate10.set_all(Some(3), Some(10), None, input_id_R1CS, weights_R1CS);
     layer.append_gate(gate10);
     layer.set_degree(3);
 

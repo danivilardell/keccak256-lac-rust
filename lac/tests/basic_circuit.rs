@@ -1,5 +1,6 @@
-use lac::or::*;
 use lac::utils::*;
+use lac::or::*;
+use lac::xor::*;
 
 #[test]
 fn test_multiplication_gate() {
@@ -121,4 +122,23 @@ fn test_or_lac_circuit() {
     let mut lac = get_or_lac_circuit(1, 1);
     let result = lac.evaluate();
     assert_eq!(result, 1);
+}
+
+#[test]
+fn test_xor_lac_circuit() {
+    let mut lac = get_xor_lac_circuit(0, 0);
+    let result = lac.evaluate();
+    assert_eq!(result, 0);
+
+    let mut lac = get_xor_lac_circuit(1, 0);
+    let result = lac.evaluate();
+    assert_eq!(result, 1);
+
+    let mut lac = get_xor_lac_circuit(0, 1);
+    let result = lac.evaluate();
+    assert_eq!(result, 1);
+
+    let mut lac = get_xor_lac_circuit(1, 1);
+    let result = lac.evaluate();
+    assert_eq!(result, 0);
 }
