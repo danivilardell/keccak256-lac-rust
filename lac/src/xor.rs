@@ -6,18 +6,17 @@ use crate::utils::*;
 //  layer1:       g_4=g_0+g_1   g_5=g_2+g_3    g_6=g_2*g_3
 //  layer2:             g_7=(g_5-2*g_6)*(g_4)
 
-
 pub fn get_xor_lac_circuit(x0: i64, x1: i64) -> LAC<i64> {
     let mut lac = LAC::new();
 
     lac.set_basic_layer(get_xor_basic_layer(x0, x1));
 
-    let layer1 = get_xor_first_layer();
-    let layer2 = get_xor_second_layer();
+    let layer1 = get_xor_first_layer(vec![2, 3], vec![2, 3], 1);
+    let layer2 = get_xor_second_layer(vec![2, 3], vec![2], 2);
     let layers = vec![layer1, layer2];
     lac.append_layers(layers);
 
-    lac.set_output_gate_id(7);
+    lac.set_output_gate_id(2);
 
     lac
 }
@@ -41,35 +40,103 @@ fn get_xor_basic_layer(x0: i64, x1: i64) -> BasicLayer<i64> {
     basic_layer
 }
 
-fn get_xor_first_layer() -> Layer<i64> {
+fn get_xor_zero_layer(in_ids: Vec<u64>, gate_ids: Vec<u64>, degree: u64) -> Layer<i64> {
     let mut layer: Layer<i64> = Layer::new();
+    layer.set_degree(degree);
+    layer.add_gate_0_and_1(degree);
 
-    let mut gate4: Gate<i64> = Gate::new_add_gate();
-    let mut gate5: Gate<i64> = Gate::new_add_gate();
-    let mut gate6: Gate<i64> = Gate::new_mult_gate();
+    let mut gate0: Gate<i64> = Gate::new_add_gate();
+    let mut gate1: Gate<i64> = Gate::new_add_gate();
 
-    gate4.set_all(Some(1), Some(4), Some([0, 1]), None, None);
-    gate5.set_all(Some(1), Some(5), Some([2, 3]), None, None);
-    gate6.set_all(Some(1), Some(6), Some([2, 3]), None, None);
+    gate0.set_all(
+        Some(degree),
+        Some(gate_ids[0]),
+        Some([0, in_ids[0]]),
+        None,
+        None,
+    );
+    gate1.set_all(
+        Some(degree),
+        Some(gate_ids[1]),
+        Some([0, in_ids[1]]),
+        None,
+        None,
+    );
+    layer.append_gates(vec![gate0, gate1]);
 
-    layer.append_gates(vec![gate4, gate5, gate6]);
-    layer.set_degree(1);
+    layer
+}
+
+fn get_xor_first_layer(in_ids: Vec<u64>, gate_ids: Vec<u64>, degree: u64) -> Layer<i64> {
+    let mut layer: Layer<i64> = Layer::new();
+    layer.set_degree(degree);
+    layer.add_gate_0_and_1(degree);
+
+    let mut gate0: Gate<i64> = Gate::new_add_gate();
+    let mut gate1: Gate<i64> = Gate::new_mult_gate();
+
+    gate0.set_all(
+        Some(degree),
+        Some(gate_ids[0]),
+        Some([in_ids[0], in_ids[1]]),
+        None,
+        None,
+    );
+    gate1.set_all(
+        Some(degree),
+        Some(gate_ids[1]),
+        Some([in_ids[0], in_ids[1]]),
+        None,
+        None,
+    );
+    layer.append_gates(vec![gate0, gate1]);
 
     layer
 }
 
 #[allow(non_snake_case)]
-fn get_xor_second_layer() -> Layer<i64> {
+fn get_xor_second_layer(in_ids: Vec<u64>, out_ids: Vec<u64>, degree: u64) -> Layer<i64> {
     let mut layer: Layer<i64> = Layer::new();
+    layer.set_degree(degree);
+    layer.add_gate_0_and_1(degree);
+    let mut gate0: Gate<i64> = Gate::new_R1CS_gate();
 
-    let mut gate7: Gate<i64> = Gate::new_R1CS_gate();
-
-    let input_id_R1CS = Some([vec![5, 6], vec![4]]);
+    let input_id_R1CS = Some([vec![in_ids[0], in_ids[1]], vec![1]]);
     let weights_R1CS = Some([vec![1, -2], vec![1]]);
-    gate7.set_all(Some(2), Some(7), None, input_id_R1CS, weights_R1CS);
+    gate0.set_all(
+        Some(degree),
+        Some(out_ids[0]),
+        None,
+        input_id_R1CS,
+        weights_R1CS,
+    );
 
-    layer.append_gates(vec![gate7]);
-    layer.set_degree(2);
+    layer.append_gates(vec![gate0]);
 
     layer
+}
+
+pub fn get_xor_as_layers(in_ids: Vec<u64>, out_id: u64, degree: u64) -> Vec<Layer<i64>> {
+    let layer0 = get_xor_zero_layer(in_ids.clone(), in_ids.clone(), degree);
+    let layer1 = get_xor_first_layer(in_ids.clone(), in_ids.clone(), degree + 1);
+    let layer2 = get_xor_second_layer(vec![in_ids[0]], vec![out_id], degree + 2);
+    let layers = vec![layer0, layer1, layer2];
+    layers
+}
+
+pub fn get_xor_bitstring_as_layers(
+    in_ids0: Vec<u64>,
+    in_ids1: Vec<u64>,
+    out_ids: Vec<u64>,
+    degree: u64,
+) -> Vec<Layer<i64>> {
+    let size = in_ids0.len();
+    let mut layers = vec![Layer::new(), Layer::new(), Layer::new()];
+    for i in 0..size {
+        let layers_xor_bit_i = get_xor_as_layers(vec![in_ids0[i], in_ids1[i]], out_ids[i], degree);
+        for j in 0..3 {
+            layers[j].merge_layer(layers_xor_bit_i[j].clone());
+        }
+    }
+    layers
 }

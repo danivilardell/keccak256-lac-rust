@@ -45,6 +45,27 @@ impl<T: Add<Output = T> + Mul<Output = T> + Copy + std::iter::Sum + std::fmt::De
         self.set_output_gate_id = Some(set_output_gate_id);
     }
 
+    pub fn merge_lac(&mut self, lac: LAC<T>) {
+        for (id, value) in lac.basic_layer.values {
+            self.basic_layer.values.insert(id, value);
+        }
+        for layer in lac.layers {
+            let degree = layer.degree.unwrap() as usize;
+            for (id, gate) in layer.gates {
+                self.layers[degree].gates.insert(id, gate);
+            }
+        }
+    }
+
+    pub fn add_layers(&mut self, layers: Vec<Layer<T>>) {
+        for layer in layers {
+            let degree = layer.degree.unwrap() as usize;
+            for (id, gate) in layer.gates {
+                self.layers[degree].gates.insert(id, gate);
+            }
+        }
+    }
+
     pub fn evaluate(&mut self) -> T {
         for i in 0..self.layers.len() {
             self.layers[i] = self.clone().layers[i].evaluate(self.clone());
@@ -86,6 +107,21 @@ impl<T: Add<Output = T> + Mul<Output = T> + Copy + std::iter::Sum + std::fmt::De
         self.degree = Some(degree);
     }
 
+    pub fn add_gate_0_and_1(&mut self, degree: u64) {
+        let mut gate0: Gate<T> = Gate::new_add_gate();
+        let mut gate1: Gate<T> = Gate::new_add_gate();
+        gate0.set_all(Some(degree), Some(0), Some([0, 0]), None, None);
+        gate1.set_all(Some(degree), Some(0), Some([0, 1]), None, None);
+        self.gates.insert(0, RefCell::new(gate0));
+        self.gates.insert(1, RefCell::new(gate1));
+    }
+
+    pub fn merge_layer(&mut self, layer: Layer<T>) {
+        for (id, gate) in layer.gates {
+            self.gates.insert(id, gate);
+        }
+    }
+
     fn evaluate(&mut self, lac: LAC<T>) -> Layer<T> {
         for (id, gate) in self.gates.iter() {
             let mut g = gate.borrow_mut();
@@ -99,7 +135,7 @@ impl<T: Add<Output = T> + Mul<Output = T> + Copy + std::iter::Sum + std::fmt::De
 
 #[derive(Clone)]
 pub struct BasicLayer<T> {
-    values: HashMap<u64, Value<T>>,
+    values: HashMap<u64, Value<T>>, //id -> Value
 }
 
 impl<T> BasicLayer<T> {
