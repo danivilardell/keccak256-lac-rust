@@ -18,8 +18,6 @@ pub fn get_or_lac_circuit(x0: i64, x1: i64) -> LAC<i64> {
     let layers = vec![layer1, layer2, layer3];
     lac.append_layers(layers);
 
-    lac.set_output_gate_id(10);
-
     lac
 }
 

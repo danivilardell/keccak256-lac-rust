@@ -1,12 +1,12 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::ops::{Add, Mul};
+use itertools::Itertools;
 
 #[derive(Clone)]
 pub struct LAC<T> {
     basic_layer: BasicLayer<T>,
     layers: Vec<Layer<T>>,
-    set_output_gate_id: Option<u64>,
 }
 
 impl<T: Add<Output = T> + Mul<Output = T> + Copy + std::iter::Sum + std::fmt::Debug> LAC<T> {
@@ -14,7 +14,6 @@ impl<T: Add<Output = T> + Mul<Output = T> + Copy + std::iter::Sum + std::fmt::De
         LAC {
             basic_layer: BasicLayer::new(),
             layers: Vec::new(),
-            set_output_gate_id: None,
         }
     }
 
@@ -41,14 +40,11 @@ impl<T: Add<Output = T> + Mul<Output = T> + Copy + std::iter::Sum + std::fmt::De
         }
     }
 
-    pub fn set_output_gate_id(&mut self, set_output_gate_id: u64) {
-        self.set_output_gate_id = Some(set_output_gate_id);
-    }
-
     pub fn merge_lac(&mut self, lac: LAC<T>) {
         for (id, value) in lac.basic_layer.values {
             self.basic_layer.values.insert(id, value);
         }
+        //TODO: merge_lac should use merge_layer method
         for layer in lac.layers {
             let degree = layer.degree.unwrap() as usize;
             for (id, gate) in layer.gates {
@@ -66,14 +62,15 @@ impl<T: Add<Output = T> + Mul<Output = T> + Copy + std::iter::Sum + std::fmt::De
         }
     }
 
-    pub fn evaluate(&mut self) -> T {
+    pub fn evaluate(&mut self) -> Vec<T> {
         for i in 0..self.layers.len() {
             self.layers[i] = self.clone().layers[i].evaluate(self.clone());
         }
-        self.layers.last().unwrap().gates[&self.set_output_gate_id.unwrap()]
-            .borrow()
-            .output
-            .unwrap()
+        let mut res: Vec<T> = Vec::new();
+        for id in self.layers.last().unwrap().gates.keys().sorted() {
+            res.push(self.layers.last().unwrap().gates[id].borrow().output.unwrap().clone());
+        }
+        res
     }
 }
 
@@ -116,6 +113,7 @@ impl<T: Add<Output = T> + Mul<Output = T> + Copy + std::iter::Sum + std::fmt::De
         self.gates.insert(1, RefCell::new(gate1));
     }
 
+    //TODO: merge_layer should check if gate exists with such id
     pub fn merge_layer(&mut self, layer: Layer<T>) {
         for (id, gate) in layer.gates {
             self.gates.insert(id, gate);
@@ -133,7 +131,7 @@ impl<T: Add<Output = T> + Mul<Output = T> + Copy + std::iter::Sum + std::fmt::De
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct BasicLayer<T> {
     values: HashMap<u64, Value<T>>, //id -> Value
 }
@@ -361,6 +359,7 @@ impl<T: Add<Output = T> + Mul<Output = T> + Copy + std::iter::Sum + std::fmt::De
 
     pub fn evaluate(&mut self) {
         self.output = Some(match self.gate_type {
+
             GateType::Add => self.input.unwrap()[0] + self.input.unwrap()[1],
             GateType::Mult => self.input.unwrap()[0] * self.input.unwrap()[1],
             GateType::R1CS => {

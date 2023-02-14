@@ -24,9 +24,7 @@ fn test_multiplication_gate() {
     layer.append_gate(gate);
     lac.append_layer(layer);
 
-    lac.set_output_gate_id(2);
-
-    let result = lac.evaluate();
+    let result = lac.evaluate()[0];
     assert_eq!(result, 140);
 }
 
@@ -55,9 +53,7 @@ fn test_addition_gate() {
     layer.append_gate(gate);
     lac.append_layer(layer);
 
-    lac.set_output_gate_id(2);
-
-    let result = lac.evaluate();
+    let result = lac.evaluate()[0];
     assert_eq!(result, 24);
 }
 
@@ -96,47 +92,45 @@ fn test_R1CS_gate() {
     layer.append_gate(gate);
     lac.append_layer(layer);
 
-    lac.set_output_gate_id(4);
-
-    let result = lac.evaluate();
+    let result = lac.evaluate()[0];
     assert_eq!(result, 10816);
 }
 
 #[test]
 fn test_or_lac_circuit() {
     let mut lac = get_or_lac_circuit(0, 0);
-    let result = lac.evaluate();
+    let result = lac.evaluate()[0];
     assert_eq!(result, 0);
 
     let mut lac = get_or_lac_circuit(1, 0);
-    let result = lac.evaluate();
+    let result = lac.evaluate()[0];
     assert_eq!(result, 1);
 
     let mut lac = get_or_lac_circuit(0, 1);
-    let result = lac.evaluate();
+    let result = lac.evaluate()[0];
     assert_eq!(result, 1);
 
     let mut lac = get_or_lac_circuit(1, 1);
-    let result = lac.evaluate();
+    let result = lac.evaluate()[0];
     assert_eq!(result, 1);
 }
 
 #[test]
 fn test_xor_lac_circuit() {
     let mut lac = get_xor_lac_circuit(0, 0);
-    let result = lac.evaluate();
+    let result = lac.evaluate()[0];
     assert_eq!(result, 0);
 
     let mut lac = get_xor_lac_circuit(1, 0);
-    let result = lac.evaluate();
+    let result = lac.evaluate()[0];
     assert_eq!(result, 1);
 
     let mut lac = get_xor_lac_circuit(0, 1);
-    let result = lac.evaluate();
+    let result = lac.evaluate()[0];
     assert_eq!(result, 1);
 
     let mut lac = get_xor_lac_circuit(1, 1);
-    let result = lac.evaluate();
+    let result = lac.evaluate()[0];
     assert_eq!(result, 0);
 }
 
@@ -154,7 +148,8 @@ fn test_xor_bitstring_lac_circuit() {
     let layers = get_xor_bitstring_as_layers(in_ids0, in_ids1.clone(), out_ids.clone(), 1);
     lac.set_basic_layer(basic_layer);
     lac.append_layers(layers);
-    lac.evaluate(); //TODO: LAC.evaluate result should return an array of bits
+    let res = lac.evaluate();
+    assert_eq!(vec![1,0,1,1,0,1,0], res);
 }
 
 fn get_xor_bitstring_basic_layer(

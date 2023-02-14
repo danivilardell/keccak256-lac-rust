@@ -2,9 +2,9 @@ use crate::utils::*;
 
 //OR gate implemented using XOR(x0,x1) = x0+x1-2*x0*x1
 //Using the following layered arithmetic circuit:
-//  layer0:    g_0=0       g_1=1       g_2=x0        g_3=x1
-//  layer1:       g_4=g_0+g_1   g_5=g_2+g_3    g_6=g_2*g_3
-//  layer2:             g_7=(g_5-2*g_6)*(g_4)
+//  layer0:    g_0=x0         g_1=x1
+//  layer1:    g_0=g_0+g_1    g_1=g_0*g_1
+//  layer2:       g_0=(g_0-2*g_1)*1
 
 pub fn get_xor_lac_circuit(x0: i64, x1: i64) -> LAC<i64> {
     let mut lac = LAC::new();
@@ -15,8 +15,6 @@ pub fn get_xor_lac_circuit(x0: i64, x1: i64) -> LAC<i64> {
     let layer2 = get_xor_second_layer(vec![2, 3], vec![2], 2);
     let layers = vec![layer1, layer2];
     lac.append_layers(layers);
-
-    lac.set_output_gate_id(2);
 
     lac
 }
@@ -98,7 +96,7 @@ fn get_xor_first_layer(in_ids: Vec<u64>, gate_ids: Vec<u64>, degree: u64) -> Lay
 fn get_xor_second_layer(in_ids: Vec<u64>, out_ids: Vec<u64>, degree: u64) -> Layer<i64> {
     let mut layer: Layer<i64> = Layer::new();
     layer.set_degree(degree);
-    layer.add_gate_0_and_1(degree);
+    //layer.add_gate_0_and_1(degree);
     let mut gate0: Gate<i64> = Gate::new_R1CS_gate();
 
     let input_id_R1CS = Some([vec![in_ids[0], in_ids[1]], vec![1]]);
@@ -119,7 +117,7 @@ fn get_xor_second_layer(in_ids: Vec<u64>, out_ids: Vec<u64>, degree: u64) -> Lay
 pub fn get_xor_as_layers(in_ids: Vec<u64>, out_id: u64, degree: u64) -> Vec<Layer<i64>> {
     let layer0 = get_xor_zero_layer(in_ids.clone(), in_ids.clone(), degree);
     let layer1 = get_xor_first_layer(in_ids.clone(), in_ids.clone(), degree + 1);
-    let layer2 = get_xor_second_layer(vec![in_ids[0]], vec![out_id], degree + 2);
+    let layer2 = get_xor_second_layer(in_ids.clone(), vec![out_id], degree + 2);
     let layers = vec![layer0, layer1, layer2];
     layers
 }
