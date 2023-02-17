@@ -1,7 +1,7 @@
+use itertools::Itertools;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::ops::{Add, Mul};
-use itertools::Itertools;
 
 #[derive(Clone)]
 pub struct LAC<T> {
@@ -68,7 +68,13 @@ impl<T: Add<Output = T> + Mul<Output = T> + Copy + std::iter::Sum + std::fmt::De
         }
         let mut res: Vec<T> = Vec::new();
         for id in self.layers.last().unwrap().gates.keys().sorted() {
-            res.push(self.layers.last().unwrap().gates[id].borrow().output.unwrap().clone());
+            res.push(
+                self.layers.last().unwrap().gates[id]
+                    .borrow()
+                    .output
+                    .unwrap()
+                    .clone(),
+            );
         }
         res
     }
@@ -108,7 +114,7 @@ impl<T: Add<Output = T> + Mul<Output = T> + Copy + std::iter::Sum + std::fmt::De
         let mut gate0: Gate<T> = Gate::new_add_gate();
         let mut gate1: Gate<T> = Gate::new_add_gate();
         gate0.set_all(Some(degree), Some(0), Some([0, 0]), None, None);
-        gate1.set_all(Some(degree), Some(0), Some([0, 1]), None, None);
+        gate1.set_all(Some(degree), Some(1), Some([0, 1]), None, None);
         self.gates.insert(0, RefCell::new(gate0));
         self.gates.insert(1, RefCell::new(gate1));
     }
@@ -359,7 +365,6 @@ impl<T: Add<Output = T> + Mul<Output = T> + Copy + std::iter::Sum + std::fmt::De
 
     pub fn evaluate(&mut self) {
         self.output = Some(match self.gate_type {
-
             GateType::Add => self.input.unwrap()[0] + self.input.unwrap()[1],
             GateType::Mult => self.input.unwrap()[0] * self.input.unwrap()[1],
             GateType::R1CS => {

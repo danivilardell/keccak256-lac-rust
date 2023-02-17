@@ -2,10 +2,10 @@ use crate::utils::*;
 
 //OR gate implemented using OR(x0,x1) = 1-(1-x0)*(1-x1)
 //Using the following layered arithmetic circuit:
-//  layer0: g_0=0           g_1=1           g_2=x0          g_3=x1
-//  layer1: g_4=g_0+g_0     g_5=g_0+g_1     g_6=(1-g_2)*1   g_7=(1-g_3)*1
-//  layer2:         g_8=g_4+g_5         g_9=g_6*g_7
-//  layer3:                 g_10=(g_8-g_9)*(g_8)
+//  layer0: g_0=x0          g_1=x1
+//  layer1: g_0=(1-g_0)*1   g_1=(1-g_1)*1
+//  layer2:       g_0=g_0*g_1
+//  layer3:      g_0=(1-g_9)*1
 
 pub fn get_or_lac_circuit(x0: i64, x1: i64) -> LAC<i64> {
     let mut lac = LAC::new();
@@ -44,23 +44,20 @@ fn get_or_basic_layer(x0: i64, x1: i64) -> BasicLayer<i64> {
 fn get_or_first_layer() -> Layer<i64> {
     let mut layer: Layer<i64> = Layer::new();
 
-    let mut gate4: Gate<i64> = Gate::new_add_gate();
-    let mut gate5: Gate<i64> = Gate::new_add_gate();
-    let mut gate6: Gate<i64> = Gate::new_R1CS_gate();
-    let mut gate7: Gate<i64> = Gate::new_R1CS_gate();
+    let mut gate0: Gate<i64> = Gate::new_R1CS_gate();
+    let mut gate1: Gate<i64> = Gate::new_R1CS_gate();
 
-    gate4.set_all(Some(1), Some(4), Some([0, 0]), None, None);
-    gate5.set_all(Some(1), Some(5), Some([0, 1]), None, None);
+    layer.add_gate_0_and_1(1);
 
     let input_id_R1CS = Some([vec![1, 2], vec![1]]);
     let weights_R1CS = Some([vec![1, -1], vec![1]]);
-    gate6.set_all(Some(1), Some(6), None, input_id_R1CS, weights_R1CS);
+    gate0.set_all(Some(1), Some(2), None, input_id_R1CS, weights_R1CS);
 
     let input_id_R1CS = Some([vec![1, 3], vec![1]]);
     let weights_R1CS = Some([vec![1, -1], vec![1]]);
-    gate7.set_all(Some(1), Some(7), None, input_id_R1CS, weights_R1CS);
+    gate1.set_all(Some(1), Some(3), None, input_id_R1CS, weights_R1CS);
 
-    layer.append_gates(vec![gate4, gate5, gate6, gate7]);
+    layer.append_gates(vec![gate0, gate1]);
     layer.set_degree(1);
 
     layer
@@ -68,14 +65,12 @@ fn get_or_first_layer() -> Layer<i64> {
 
 fn get_or_second_layer() -> Layer<i64> {
     let mut layer: Layer<i64> = Layer::new();
+    layer.add_gate_0_and_1(2);
+    let mut gate0: Gate<i64> = Gate::new_mult_gate();
 
-    let mut gate8: Gate<i64> = Gate::new_add_gate();
-    let mut gate9: Gate<i64> = Gate::new_mult_gate();
+    gate0.set_all(Some(2), Some(2), Some([2, 3]), None, None);
 
-    gate8.set_all(Some(2), Some(8), Some([4, 5]), None, None);
-    gate9.set_all(Some(2), Some(9), Some([6, 7]), None, None);
-
-    layer.append_gates(vec![gate8, gate9]);
+    layer.append_gates(vec![gate0]);
     layer.set_degree(2);
 
     layer
@@ -85,12 +80,12 @@ fn get_or_second_layer() -> Layer<i64> {
 fn get_or_third_layer() -> Layer<i64> {
     let mut layer: Layer<i64> = Layer::new();
 
-    let mut gate10: Gate<i64> = Gate::new_R1CS_gate();
+    let mut gate0: Gate<i64> = Gate::new_R1CS_gate();
 
-    let input_id_R1CS = Some([vec![8, 9], vec![8]]);
+    let input_id_R1CS = Some([vec![1, 2], vec![1]]);
     let weights_R1CS = Some([vec![1, -1], vec![1]]);
-    gate10.set_all(Some(3), Some(10), None, input_id_R1CS, weights_R1CS);
-    layer.append_gate(gate10);
+    gate0.set_all(Some(3), Some(0), None, input_id_R1CS, weights_R1CS);
+    layer.append_gate(gate0);
     layer.set_degree(3);
 
     layer
