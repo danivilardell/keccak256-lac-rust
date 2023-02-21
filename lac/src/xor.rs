@@ -122,6 +122,7 @@ pub fn get_xor_as_layers(in_ids: Vec<u64>, out_id: u64, degree: u64) -> Vec<Laye
     layers
 }
 
+///XOR for bit_string, uses 3 layers
 pub fn get_xor_bitstring_as_layers(
     in_ids0: Vec<u64>,
     in_ids1: Vec<u64>,

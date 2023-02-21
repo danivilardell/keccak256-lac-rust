@@ -126,6 +126,14 @@ impl<T: Add<Output = T> + Mul<Output = T> + Copy + std::iter::Sum + std::fmt::De
         }
     }
 
+    pub fn copy_gates_by_ids(&mut self, ids: Vec<u64>) {
+        for id in ids {
+            let mut gate: Gate<T> = Gate::new_add_gate();
+            gate.set_all(self.degree, Some(id), Some([0, id]), None, None);
+            self.append_gate(gate);
+        }
+    }
+
     fn evaluate(&mut self, lac: LAC<T>) -> Layer<T> {
         for (id, gate) in self.gates.iter() {
             let mut g = gate.borrow_mut();
