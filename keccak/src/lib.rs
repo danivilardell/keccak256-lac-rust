@@ -1,2 +1,2 @@
 mod keccak_circuit;
-mod omega_step;
+mod keccak_f_circuit;

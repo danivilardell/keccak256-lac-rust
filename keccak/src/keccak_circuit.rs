@@ -1,6 +1,16 @@
-use crate::omega_step::*;
+use crate::keccak_f_circuit::*;
 use lac::utils::*;
 use lac::xor::*;
+
+const rot: [i64; 25] = [
+    0, 1, 62, 28, 27, 36, 44, 6, 55, 20, 3, 10, 43, 25, 39, 41, 45, 15, 21, 8, 18, 2, 61, 56, 14,
+];
+/// RC for the first 12 rounds
+//const RC: [i64; 12] = [1, 32898, 9223372036854808714, 9223372039002292224, 32907, 2147483649,
+//                       9223372039002292353, 9223372036854808585, 138, 136, 2147516425, 2147483658];
+const RC: [i64; 12] = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+
+const rot_rc_ids: u64 = 1e8 as u64;
 
 ///c - capacity, r - bitrate, l - output length
 pub fn get_keccak_lac_circuit(input: Vec<i64>, r: u64, c: u64, l: u64) -> LAC<i64> {
@@ -39,6 +49,18 @@ pub fn get_keccak_basic_layer(input: Vec<i64>) -> BasicLayer<i64> {
         basic_layer.append_value(value0);
     }
 
+    for i in rot_rc_ids..(rot_rc_ids + 25) {
+        let mut valuerot: Value<i64> = Value::new();
+        let pos: usize = (i - rot_rc_ids) as usize;
+        valuerot.set_all(i, rot[pos]);
+    }
+
+    for i in (2 * rot_rc_ids as u64)..(2 * rot_rc_ids + 12) {
+        let mut valuerot: Value<i64> = Value::new();
+        let pos: usize = (i - 2 * rot_rc_ids) as usize;
+        valuerot.set_all(i, RC[pos]);
+    }
+
     basic_layer
 }
 
@@ -49,7 +71,11 @@ pub fn get_keccak_first_layer(input_size: u64, r: u64, w: u64, blocks_amount: u6
     let mut layer: Layer<i64> = Layer::new();
     layer.set_degree(1);
     layer.copy_gates_by_ids((0..(input_size + 1)).collect());
-
+    ///Copy input gates
+    layer.copy_gates_by_ids((rot_rc_ids..(rot_rc_ids + 25)).collect());
+    ///Copy rot gates
+    layer.copy_gates_by_ids(((2 * rot_rc_ids)..(2 * rot_rc_ids + (RC.len() as u64))).collect());
+    ///Copy RC gates
     //padding 10*1
     let mut gate: Gate<i64> = Gate::new_add_gate();
     gate.set_all(Some(1), Some(input_size + 1), Some([0, 1]), None, None);
@@ -69,12 +95,13 @@ pub fn get_keccak_first_layer(input_size: u64, r: u64, w: u64, blocks_amount: u6
     );
     layer.append_gate(gate);
 
-    //S[x][y][w] = 0 for x, y int 0..4 and w in 0..(c+r)/25
-    for i in 0..(5 * 5 * w) {
+    /// S[x][y][w] = 0 for x, y int 0..4 and w in 0..(c+r)/25
+    for i in (blocks_amount * r)..(blocks_amount * r + 5 * 5 * w) {
         let mut gate: Gate<i64> = Gate::new_add_gate();
         gate.set_all(Some(1), Some(i), Some([0, 0]), None, None);
         layer.append_gate(gate);
     }
+
     layer
 }
 
@@ -92,7 +119,6 @@ pub fn get_keccak_absorbing_phase_layers(blocks_amount: u64, r: u64, w: u64) -> 
         layers.append(&mut layers_xor);
         degree += 3;
 
-
         let s_i: Vec<u64> =
             ((2 + blocks_amount * r)..(2 + blocks_amount * r + 5 * 5 * w)).collect();
         let mut layers_keccak_f_function: Vec<Layer<i64>> = get_keccak_f_function(s_i, degree);
@@ -109,12 +135,16 @@ pub fn get_keccak_absorbing_phase_layers(blocks_amount: u64, r: u64, w: u64) -> 
 /// 2: S_(i+1) = f(S_i)
 /// Where f is the Keccak-f
 /// We will iterate this loop until |Z| >= l, the output_size
-pub fn get_keccak_squeezing_phase_layers(r: u64, w: u64, l: u64) {
-
-}
+pub fn get_keccak_squeezing_phase_layers(r: u64, w: u64, l: u64) {}
 
 ///keccak_f function with m layers(Still don't know how many layers it will take)
 pub fn get_keccak_f_function(input_ids: Vec<u64>, degree: u64) -> Vec<Layer<i64>> {
-    let layers: Vec<Layer<i64>> = Vec::new();
-    layers
+    let mut layers: Vec<Layer<i64>> = Vec::new();
+    let mut layers_res: Vec<Layer<i64>> = vec![];
+    for mut layer in layers {
+        layer.copy_gates_by_ids((rot_rc_ids..(rot_rc_ids + 25)).collect());
+        layer.copy_gates_by_ids(((2 * rot_rc_ids)..(2 * rot_rc_ids + (RC.len() as u64))).collect());
+        layers_res.push(layer);
+    }
+    layers_res
 }
