@@ -4,13 +4,14 @@ use lac::xor::*;
 ///keccak_f function with m layers(Still don't know how many layers it will take)
 pub fn get_keccak_f_function(
     input_ids: Vec<u64>,
-    degree: u64,
+    mut degree: u64,
     r_ids: Vec<u64>,
     RC_ids: Vec<u64>,
     w: u64,
 ) -> Vec<Layer<i64>> {
     let layers: Vec<Layer<i64>> = Vec::new();
-
+    let omega_step_layers = get_keccak_f_omega_step_layers(input_ids.clone(), degree, w);
+    degree += omega_step_layers.len() as u64;
     layers
 }
 
@@ -51,14 +52,14 @@ pub fn get_keccak_f_omega_step_layers(
                 in_ids0.clone(),
                 in_ids1.clone(),
                 out_ids_C.clone(),
-                degree + 3*(j-1),
+                degree + 3 * (j - 1),
             );
-            layers[(3*(j-1)) as usize].merge_layer(layers_xor[0].clone());
-            layers[(3*(j-1) + 1) as usize].merge_layer(layers_xor[1].clone());
-            layers[(3*(j-1) + 2) as usize].merge_layer(layers_xor[2].clone());
+            layers[(3 * (j - 1)) as usize].merge_layer(layers_xor[0].clone());
+            layers[(3 * (j - 1) + 1) as usize].merge_layer(layers_xor[1].clone());
+            layers[(3 * (j - 1) + 2) as usize].merge_layer(layers_xor[2].clone());
         }
     }
-    degree += 4*3+1;
+    degree += 4 * 3 + 1;
     for i in 0..5 {
         let out_ids_D: Vec<u64> =
             (((2 * 1e9 as u64) + i * w)..((2 * 1e9 as u64) + (i + 1) * w)).collect();
@@ -93,6 +94,11 @@ pub fn get_keccak_f_omega_step_layers(
         }
     }
 
+    layers
+}
+
+pub fn get_keccak_f_pi_rho_steps_layers() -> Vec<Layer<i64>> {
+    let layers: Vec<Layer<i64>> = vec![];
     layers
 }
 
