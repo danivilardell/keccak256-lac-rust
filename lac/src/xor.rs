@@ -115,14 +115,14 @@ fn get_xor_second_layer(in_ids: Vec<u64>, out_ids: Vec<u64>, degree: u64) -> Lay
 }
 
 pub fn get_xor_as_layers(in_ids: Vec<u64>, out_id: u64, degree: u64) -> Vec<Layer<i64>> {
-    let layer0 = get_xor_zero_layer(in_ids.clone(), in_ids.clone(), degree);
-    let layer1 = get_xor_first_layer(in_ids.clone(), in_ids.clone(), degree + 1);
-    let layer2 = get_xor_second_layer(in_ids.clone(), vec![out_id], degree + 2);
-    let layers = vec![layer0, layer1, layer2];
+    //let layer0 = get_xor_zero_layer(in_ids.clone(), in_ids.clone(), degree);
+    let layer1 = get_xor_first_layer(in_ids.clone(), in_ids.clone(), degree);
+    let layer2 = get_xor_second_layer(in_ids.clone(), vec![out_id], degree);
+    let layers = vec![layer1, layer2];
     layers
 }
 
-///XOR for bit_string, uses 3 layers
+///XOR for bit_string, uses 2 layers
 pub fn get_xor_bitstring_as_layers(
     in_ids0: Vec<u64>,
     in_ids1: Vec<u64>,
@@ -130,10 +130,10 @@ pub fn get_xor_bitstring_as_layers(
     degree: u64,
 ) -> Vec<Layer<i64>> {
     let size = in_ids0.len();
-    let mut layers = vec![Layer::new(), Layer::new(), Layer::new()];
+    let mut layers = vec![Layer::new(), Layer::new()];
     for i in 0..size {
         let layers_xor_bit_i = get_xor_as_layers(vec![in_ids0[i], in_ids1[i]], out_ids[i], degree);
-        for j in 0..3 {
+        for j in 0..2 {
             layers[j].merge_layer(layers_xor_bit_i[j].clone());
         }
     }

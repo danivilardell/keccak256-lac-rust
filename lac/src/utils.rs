@@ -17,6 +17,31 @@ impl<T: Add<Output = T> + Mul<Output = T> + Copy + std::iter::Sum + std::fmt::De
         }
     }
 
+    pub fn get_gates_amount(&self) -> usize {
+        let mut res = 0;
+        for layer in &self.layers {
+            for (id, gate) in &layer.gates {
+                match gate.borrow().gate_type {
+                    GateType::R1CS => {
+                        res += 3;
+                    }
+                    _ => {
+                        res += 1;
+                    }
+                }
+            }
+        }
+        res
+    }
+
+    pub fn get_layers_amount(&self) -> usize {
+        self.layers.len()
+    }
+
+    pub fn get_input_size(&self) -> usize {
+        self.basic_layer.values.len() - 2
+    }
+
     pub fn set_basic_layer(&mut self, basic_layer: BasicLayer<T>) {
         self.basic_layer = basic_layer;
     }
@@ -110,6 +135,10 @@ impl<T: Add<Output = T> + Mul<Output = T> + Copy + std::iter::Sum + std::fmt::De
         self.degree = Some(degree);
     }
 
+    pub fn get_degree(&mut self) -> u64 {
+        self.degree.unwrap()
+    }
+
     pub fn add_gate_0_and_1(&mut self, degree: u64) {
         let mut gate0: Gate<T> = Gate::new_add_gate();
         let mut gate1: Gate<T> = Gate::new_add_gate();
@@ -130,6 +159,14 @@ impl<T: Add<Output = T> + Mul<Output = T> + Copy + std::iter::Sum + std::fmt::De
         for id in ids {
             let mut gate: Gate<T> = Gate::new_add_gate();
             gate.set_all(self.degree, Some(id), Some([0, id]), None, None);
+            self.append_gate(gate);
+        }
+    }
+
+    pub fn copy_gates_by_ids_set_out(&mut self, ids: Vec<u64>, out_ids: Vec<u64>) {
+        for i in 0..ids.len() {
+            let mut gate: Gate<T> = Gate::new_add_gate();
+            gate.set_all(self.degree, Some(out_ids[i]), Some([0, ids[i]]), None, None);
             self.append_gate(gate);
         }
     }

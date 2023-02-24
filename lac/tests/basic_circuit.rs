@@ -102,7 +102,7 @@ fn test_or_lac_circuit() {
     let result = lac.evaluate()[0];
     assert_eq!(result, 0);
 
-    /*let mut lac = get_or_lac_circuit(1, 0);
+    let mut lac = get_or_lac_circuit(1, 0);
     let result = lac.evaluate()[0];
     assert_eq!(result, 1);
 
@@ -112,7 +112,7 @@ fn test_or_lac_circuit() {
 
     let mut lac = get_or_lac_circuit(1, 1);
     let result = lac.evaluate()[0];
-    assert_eq!(result, 1);*/
+    assert_eq!(result, 1);
 }
 
 #[test]
