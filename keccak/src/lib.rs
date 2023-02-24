@@ -1,2 +1,2 @@
-mod keccak_circuit;
+pub mod keccak_circuit;
 mod keccak_f_circuit;

@@ -20,7 +20,7 @@ impl<T: Add<Output = T> + Mul<Output = T> + Copy + std::iter::Sum + std::fmt::De
     pub fn get_gates_amount(&self) -> usize {
         let mut res = 0;
         for layer in &self.layers {
-            for (id, gate) in &layer.gates {
+            for (_, gate) in &layer.gates {
                 match gate.borrow().gate_type {
                     GateType::R1CS => {
                         res += 3;
@@ -129,6 +129,10 @@ impl<T: Add<Output = T> + Mul<Output = T> + Copy + std::iter::Sum + std::fmt::De
         for gate in gates {
             self.gates.insert(gate.id.unwrap(), RefCell::new(gate));
         }
+    }
+
+    pub fn gates_amount(&self) -> usize {
+        self.gates.len()
     }
 
     pub fn set_degree(&mut self, degree: u64) {

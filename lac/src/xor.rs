@@ -38,7 +38,7 @@ fn get_xor_basic_layer(x0: i64, x1: i64) -> BasicLayer<i64> {
     basic_layer
 }
 
-fn get_xor_zero_layer(in_ids: Vec<u64>, gate_ids: Vec<u64>, degree: u64) -> Layer<i64> {
+/*fn get_xor_zero_layer(in_ids: Vec<u64>, gate_ids: Vec<u64>, degree: u64) -> Layer<i64> {
     let mut layer: Layer<i64> = Layer::new();
     layer.set_degree(degree);
     layer.add_gate_0_and_1(degree);
@@ -63,7 +63,7 @@ fn get_xor_zero_layer(in_ids: Vec<u64>, gate_ids: Vec<u64>, degree: u64) -> Laye
     layer.append_gates(vec![gate0, gate1]);
 
     layer
-}
+}*/
 
 fn get_xor_first_layer(in_ids: Vec<u64>, gate_ids: Vec<u64>, degree: u64) -> Layer<i64> {
     let mut layer: Layer<i64> = Layer::new();
