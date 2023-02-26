@@ -89,10 +89,13 @@ impl<T: Add<Output = T> + Mul<Output = T> + Copy + std::iter::Sum + std::fmt::De
 
     pub fn evaluate(&mut self) -> Vec<T> {
         for i in 0..self.layers.len() {
+            println!("LAC evaluating layer {}", i);
             self.layers[i] = self.clone().layers[i].evaluate(self.clone());
         }
+        println!("LAC evaluated");
         let mut res: Vec<T> = Vec::new();
         for id in self.layers.last().unwrap().gates.keys().sorted() {
+            println!("id: {}", id);
             res.push(
                 self.layers.last().unwrap().gates[id]
                     .borrow()
@@ -177,6 +180,7 @@ impl<T: Add<Output = T> + Mul<Output = T> + Copy + std::iter::Sum + std::fmt::De
 
     fn evaluate(&mut self, lac: LAC<T>) -> Layer<T> {
         for (id, gate) in self.gates.iter() {
+            println!("evaluating gate {}", id);
             let mut g = gate.borrow_mut();
             g.set_input(lac.clone());
             g.evaluate();

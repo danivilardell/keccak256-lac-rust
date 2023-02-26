@@ -50,11 +50,11 @@ pub fn get_keccak_f_layers(input_ids: Vec<u64>, degree: u64, w: u64) -> Vec<Laye
         layers.append(&mut layer_f_fun);
     }
 
-    let mut gate_amount = 0;
+    /*let mut gate_amount = 0;
     for i in 0..layers.len() {
         gate_amount += layers[i].gates_amount();
     }
-    println!("keccak_f ===> layers: {:?}, gates: {:?}", layers.len(), gate_amount);
+    println!("keccak_f ===> layers: {:?}, gates: {:?}", layers.len(), gate_amount);*/
 
     layers
 }
@@ -91,11 +91,11 @@ pub fn get_keccak_f_round_layers(
     iota_step_layer.add_gate_0_and_1(degree);
     layers.push(iota_step_layer);
 
-    let mut gate_amount = 0;
+    /*let mut gate_amount = 0;
     for i in 0..layers.len() {
         gate_amount += layers[i].gates_amount();
     }
-    println!("keccak_f round ===> layers: {:?}, gates: {:?}", layers.len(), gate_amount);
+    println!("keccak_f round ===> layers: {:?}, gates: {:?}", layers.len(), gate_amount);*/
 
     layers
 }
@@ -178,11 +178,11 @@ pub fn get_keccak_f_omega_step_layers(
         }
     }
 
-    let mut gate_amount = 0;
+    /*let mut gate_amount = 0;
     for i in 0..layers.len() {
         gate_amount += layers[i].gates_amount();
     }
-    println!("omega step ===> layers: {:?}, gates: {:?}", layers.len(), gate_amount);
+    println!("omega step ===> layers: {:?}, gates: {:?}", layers.len(), gate_amount);*/
 
     layers
 }
@@ -206,7 +206,7 @@ pub fn get_keccak_f_pi_rho_steps_layer(input_ids: Vec<u64>, degree: u64, w: u64)
     }
     layer.copy_gates_by_ids(input_ids.clone());
 
-    println!("pi and rho steps ===> layers: {:?}, gates: {:?}", 1, layer.gates_amount());
+    //println!("pi and rho steps ===> layers: {:?}, gates: {:?}", 1, layer.gates_amount());
 
     layer
 }
@@ -271,11 +271,11 @@ pub fn get_keccak_f_chi_step_layer(input_ids: Vec<u64>, degree: u64, w: u64) -> 
         }
     }
 
-    let mut gate_amount = 0;
+    /*let mut gate_amount = 0;
     for i in 0..layers.len() {
         gate_amount += layers[i].gates_amount();
     }
-    println!("chi step ===> layers: {:?}, gates: {:?}", layers.len(), gate_amount);
+    println!("chi step ===> layers: {:?}, gates: {:?}", layers.len(), gate_amount);*/
 
     layers
 }
@@ -304,7 +304,7 @@ pub fn get_keccak_f_iota_step_layer(
         }
     }
 
-    println!("iota step ===> layers: {:?}, gates: {:?}", 1, layer.gates_amount());
+    //println!("iota step ===> layers: {:?}, gates: {:?}", 1, layer.gates_amount());
 
     layer
 }
