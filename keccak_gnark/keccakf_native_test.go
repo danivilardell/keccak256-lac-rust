@@ -1,7 +1,7 @@
 // Copyright 2014 The Go Authors.
 // vendored from golang.org/x/crypto/sha3/keccakf.go for testing
 
-package keccakf
+package keccakf_test
 
 // rc stores the round constants for use in the ι step.
 var rc = [24]uint64{

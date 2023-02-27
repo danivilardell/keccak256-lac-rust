@@ -1,4 +1,4 @@
-package keccakf
+package keccakf_test
 
 import (
 	"testing"
