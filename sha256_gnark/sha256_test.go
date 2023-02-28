@@ -1,51 +1,96 @@
+/*
+Copyright © 2023 Jan Lauinger
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package sha256
 
 import (
-	"github.com/consensys/gnark-crypto/ecc"
-	"github.com/consensys/gnark/backend"
-	"github.com/consensys/gnark/frontend"
-	"github.com/xuperchain/crypto/core/zkp/zk_snark/gadgets/hash/sha256"
+	"encoding/hex"
 	"testing"
+
+	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/test"
 )
 
-// Circuit defines a pre-image knowledge proof
-// SHA256(secret preImage) = public hash
-type SHA256Circuit struct {
-	// struct tag on a variable is optional
-	// default uses variable name and secret visibility.
-	PreImage frontend.Variable
-	Hash     frontend.Variable `gnark:",public"`
+type sha256Circuit struct {
+	ExpectedResult [32]frontend.Variable `gnark:"data,public"`
+	PreImage       []frontend.Variable
 }
 
-// Define declares the circuit's constraints
-// Hash = SHA256(PreImage)
-func (circuit *SHA256Circuit) Define(curveID ecc.ID, api frontend.API) error {
-	// hash function
-	sha256, _ := sha256.NewSHA256("seed", curveID, api)
-
-	// specify constraints
-	// SHA256(preImage) == hash
-	sha256.Write(circuit.PreImage)
-	api.AssertIsEqual(circuit.Hash, sha256.Sum())
+func (circuit *sha256Circuit) Define(api frontend.API) error {
+	sha := NewSHA256(api)
+	hash := sha.Hash(circuit.PreImage)
+	for i := 0; i < 32; i++ {
+		api.AssertIsEqual(circuit.ExpectedResult[i], hash[i])
+	}
 	return nil
 }
 
-// NewCircuit return the circuit implementing a pre-image check
-func NewCircuit() (frontend.CompiledConstraintSystem, error) {
-	circuit := &SHA256Circuit{}
+func TestSha256All(t *testing.T) {
+	assert := test.NewAssert(t)
 
-	// generate CompiledConstraintSystem
-	ccs, err := frontend.Compile(ecc.BLS12_381, backend.GROTH16, circuit, nil)
-	if err != nil {
-		return nil, err
+	input := "68656c6c6f20776f726c64"
+	output := "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9"
+
+	// 'hello-world-hello-world-hello-world-hello-world-hello-world-12345' as hex
+	// input := "68656c6c6f2d776f726c642d68656c6c6f2d776f726c642d68656c6c6f2d776f726c642d68656c6c6f2d776f726c642d68656c6c6f2d776f726c642d3132333435"
+	// output := "34caf9dcd6b137c56c59f81e071a4b77a11329f26c80d7023ac7dfc485dcd780"
+
+	byteSlice, _ := hex.DecodeString(input)
+	inputByteLen := len(byteSlice)
+
+	byteSlice, _ = hex.DecodeString(output)
+	outputByteLen := len(byteSlice)
+
+	// witness definition
+	preImageAssign := strToIntSlice(input, true)
+	outputAssign := strToIntSlice(output, true)
+
+	// witness values preparation
+	assignment := sha256Circuit{
+		PreImage:       make([]frontend.Variable, inputByteLen),
+		ExpectedResult: [32]frontend.Variable{},
 	}
 
-	return ccs, nil
+	// assign values here because required to use make in assignment
+	for i := 0; i < inputByteLen; i++ {
+		assignment.PreImage[i] = preImageAssign[i]
+	}
+	for i := 0; i < outputByteLen; i++ {
+		assignment.ExpectedResult[i] = outputAssign[i]
+	}
+
+	circuit := sha256Circuit{
+		PreImage: make([]frontend.Variable, inputByteLen),
+	}
+
+	assert.SolvingSucceeded(&circuit, &assignment)
 }
 
-func TestKeccakf(t *testing.T) {
-	css, err := NewCircuit()
-	if err == nil {
-
+func strToIntSlice(inputData string, hexRepresentation bool) []int {
+	var byteSlice []byte
+	if hexRepresentation {
+		hexBytes, _ := hex.DecodeString(inputData)
+		byteSlice = hexBytes
+	} else {
+		byteSlice = []byte(inputData)
 	}
+
+	var data []int
+	for i := 0; i < len(byteSlice); i++ {
+		data = append(data, int(byteSlice[i]))
+	}
+	return data
 }
