@@ -14,11 +14,13 @@ import (
 func generatePlonk() error {
 	var circuit cubic.Circuit
 
+	//scs : circuit in sparse r1cs format
 	scs, err := frontend.Compile(ecc.BN254.ScalarField(), scs.NewBuilder, &circuit)
 	if err != nil {
 		return err
 	}
 
+	// Generate kzg global parameters trusted setup
 	srs, err := test.NewKZGSRS(scs)
 	if err != nil {
 		return err
@@ -34,6 +36,7 @@ func generatePlonk() error {
 		}
 	}
 
+	//generate plonk vk and pk
 	pk, vk, err := plonk.Setup(scs, srs)
 	if err != nil {
 		return err
