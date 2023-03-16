@@ -24,7 +24,7 @@ func generatePlonk() error {
 		return err
 	}
 	{
-		f, err := os.Create("files/kzg.plonk.srs")
+		f, err := os.Create("kzg.plonk.srs")
 		if err != nil {
 			return err
 		}
@@ -39,7 +39,7 @@ func generatePlonk() error {
 		return err
 	}
 	{
-		f, err := os.Create("files/cubic.plonk.vk")
+		f, err := os.Create("cubic.plonk.vk")
 		if err != nil {
 			return err
 		}
@@ -49,7 +49,7 @@ func generatePlonk() error {
 		}
 	}
 	{
-		f, err := os.Create("files/cubic.plonk.pk")
+		f, err := os.Create("cubic.plonk.pk")
 		if err != nil {
 			return err
 		}
@@ -60,7 +60,7 @@ func generatePlonk() error {
 	}
 
 	{
-		f, err := os.Create("files/contract_plonk.sol")
+		f, err := os.Create("contract_plonk.sol")
 		if err != nil {
 			return err
 		}
@@ -72,7 +72,21 @@ func generatePlonk() error {
 	return nil
 }
 
+// run this from /integration/solidity to regenerate files
+// note: this is not in go generate format to avoid solc dependency in circleCI for now.
+// go run contract/main.go && abigen --sol contract.sol --pkg solidity --out solidity.go
 func main() {
+
+	// var circuit cubic.Circuit
+	// r1cs, _ := frontend.Compile(ecc.BN254.ScalarField(), r1cs.NewBuilder, &circuit)
+
+	// srs, _ := test.NewKZGSRS(r1cs)
+
+	// _, vk, _ := plonk.Setup(r1cs, srs)
+
+	// f, _ := os.Create("contract_plonk.sol")
+
+	// _ = vk.ExportSolidity(f)
 
 	_ = generatePlonk()
 
