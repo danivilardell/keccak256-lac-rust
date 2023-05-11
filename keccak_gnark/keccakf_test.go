@@ -1,6 +1,7 @@
 package keccakf_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/consensys/gnark-crypto/ecc"
@@ -16,6 +17,7 @@ type keccakfCircuit struct {
 }
 
 func (c *keccakfCircuit) Define(api frontend.API) error {
+	fmt.Println(c.In)
 	res := keccakf.Permute(api, c.In)
 	for i := range res {
 		api.AssertIsEqual(res[i], c.Expected[i])

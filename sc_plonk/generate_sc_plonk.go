@@ -61,7 +61,7 @@ func generatePlonk() error {
 			return err
 		}
 	}
-
+	// export solidity verifier
 	{
 		f, err := os.Create("files/contract_plonk.sol")
 		if err != nil {
